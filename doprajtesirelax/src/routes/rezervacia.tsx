@@ -102,46 +102,71 @@ function RezervaciaPage() {
   const freeCount = slots.filter((s) => s.available).length;
 
   async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedSlot) return;
-    setSubmitting(true);
-    setError(null);
+  e.preventDefault();
+
+  if (!selectedSlot || submitting) return;
+
+  setSubmitting(true);
+  setError(null);
+
+  try {
     const start = new Date(selectedSlot);
     const end = new Date(start.getTime() + option.minutes * 60000);
 
-    // Kontrola kolízie tesne pred odoslaním
-    const { data: fresh } = await supabase.rpc("get_busy_slots", {
-      _from: start.toISOString(),
-      _to: end.toISOString(),
-    });
+    const { data: fresh, error: checkError } = await supabase.rpc(
+      "get_busy_slots",
+      {
+        _from: start.toISOString(),
+        _to: end.toISOString(),
+      }
+    );
+
+    if (checkError) {
+      console.error("Chyba kontroly termínu:", checkError);
+      setError("Nepodarilo sa overiť dostupnosť termínu.");
+      return;
+    }
+
     if ((fresh as Busy[] | null)?.length) {
-      setError("Tento termín bol práve obsadený. Vyberte si prosím iný.");
-      setSubmitting(false);
+      setError("Tento termín bol práve obsadený. Vyberte si iný.");
       void loadBusy();
       return;
     }
 
-    const { error: err } = await supabase.from("bookings").insert({
-      service: `${service.name} (${option.label})`,
-      duration_min: option.minutes,
-      starts_at: start.toISOString(),
-      ends_at: end.toISOString(),
-      customer_name: form.name.trim(),
-      phone: form.phone.trim(),
-      email: form.email.trim() || null,
-      note: form.note.trim() || null,
-    });
+    const { error: insertError } = await supabase
+      .from("bookings")
+      .insert({
+        service: `${service.name} (${option.label})`,
+        duration_min: option.minutes,
+        starts_at: start.toISOString(),
+        ends_at: end.toISOString(),
+        customer_name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim() || null,
+        note: form.note.trim() || null,
+      });
 
-    setSubmitting(false);
-    if (err) {
+    if (insertError) {
+      console.error("Chyba uloženia rezervácie:", insertError);
       setError("Rezerváciu sa nepodarilo odoslať. Skúste to prosím znova.");
       return;
     }
-    setDone({ when: `${formatDateLong(start)} o ${formatTime(start)}` });
+
+    setDone({
+      when: `${formatDateLong(start)} o ${formatTime(start)}`,
+    });
+
     setSelectedSlot(null);
     setForm({ name: "", phone: "", email: "", note: "" });
+
     void loadBusy();
+  } catch (err) {
+    console.error("Chyba pri odosielaní rezervácie:", err);
+    setError("Nastala chyba pri odosielaní. Skúste to prosím znova.");
+  } finally {
+    setSubmitting(false);
   }
+}
 
   return (
     <main className="min-h-screen bg-background text-foreground">
