@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import logo from “@/assets/logo.png”
+import logo from "@/assets/logo.png"
 import heroImg from "@/assets/hero.jpg";
 import aboutImg from "@/assets/about.jpg";
 import { Divider, LeafOrnament, SectionTitle } from "@/components/Ornaments";
