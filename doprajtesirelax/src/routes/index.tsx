@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import logoAsset from "@/assets/logo.png.asset.json";
-const logo = logoAsset.url;
+import logo from “@/assets/logo.png”
 import heroImg from "@/assets/hero.jpg";
 import aboutImg from "@/assets/about.jpg";
 import { Divider, LeafOrnament, SectionTitle } from "@/components/Ornaments";
